@@ -1,6 +1,8 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { type DefaultSession, type NextAuthConfig } from "next-auth";
-import DiscordProvider from "next-auth/providers/discord";
+import Nodemailer from "next-auth/providers/nodemailer";
+import { createTransport } from "nodemailer";
+import { html, text } from "./sentEmail";
 
 import { db } from "~/server/db";
 
@@ -32,16 +34,34 @@ declare module "next-auth" {
  */
 export const authConfig = {
   providers: [
-    DiscordProvider,
-    /**
-     * ...add more providers here.
-     *
-     * Most other providers require a bit more work than the Discord provider. For example, the
-     * GitHub provider requires you to add the `refresh_token_expires_in` field to the Account
-     * model. Refer to the NextAuth.js docs for the provider you want to use. Example:
-     *
-     * @see https://next-auth.js.org/providers/github
-     */
+    Nodemailer({
+      server: process.env.EMAIL_SERVER,
+      from: process.env.EMAIL_FROM,
+      // maxAge: 24 * 60 * 60, // How long email links are valid for (default 24h)
+      async sendVerificationRequest({
+        identifier: email,
+        url,
+        provider: { server, from },
+      }) {
+        const { host } = new URL(url);
+        const transport = createTransport(server);
+        const result = await transport.sendMail({
+          to: email,
+          from: from,
+          subject: "登录验证",
+          text: text({ url, host }),
+          html: html({ url, host }),
+        });
+        const rejected = result.rejected || [];
+        const pending = result.pending || [];
+        const failed = rejected.concat(pending).filter(Boolean);
+        if (failed.length) {
+          throw new Error(
+            `邮件 (${failed.map(String).join(", ")}) 未成功发送，请检查您的邮箱设置。`,
+          );
+        }
+      },
+    }),
   ],
   adapter: PrismaAdapter(db),
   callbacks: {
@@ -52,5 +72,10 @@ export const authConfig = {
         id: user.id,
       },
     }),
+    async redirect({ url, baseUrl }) {
+      console.log("redirect", url, baseUrl);
+
+      return baseUrl;
+    },
   },
 } satisfies NextAuthConfig;
