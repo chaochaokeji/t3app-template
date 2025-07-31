@@ -73,9 +73,11 @@ export const authConfig = {
       },
     }),
     async redirect({ url, baseUrl }) {
-      console.log("redirect", url, baseUrl);
-
       return baseUrl;
     },
+  },
+  pages: {
+    signIn: "/signin",
+    signOut: "/signout",
   },
 } satisfies NextAuthConfig;
