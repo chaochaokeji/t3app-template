@@ -25,7 +25,13 @@ git clone https://github.com/chaochaokeji/t3app-template.git
 复制 .env.example 为 .env
 修改 .env 中密钥、邮箱配置、数据库账号密码
 
-### step4 启动docker数据库
+### step4 安装依赖
+
+```
+pnpm i
+```
+
+### step5 启动docker数据库
 
 ```
 ./start-database.sh
@@ -37,7 +43,7 @@ git clone https://github.com/chaochaokeji/t3app-template.git
 pnpm db:push
 ```
 
-### step5 启动测试
+### step6 启动测试
 
 ```
 pnpm dev
